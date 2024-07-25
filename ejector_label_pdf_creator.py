@@ -25,18 +25,21 @@ def create_labels(serial_numbers, date, product_type):
 
     # Calculate number of labels per row and column
     labels_per_row = 3
-    labels_per_column = 7  # 18 labels / 3 labels per row
+    labels_per_column = 7  # 21 labels / 3 labels per row
 
     try:
         # Register Arial font for the PDF
         pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))  # Ensure 'Arial.ttf' is available in your directory
-        c.setFont("Arial", 18)  # Set font to Arial, size 10
+        c.setFont("Arial", 18)  # Set font to Arial, size 18
     except Exception as e:
         messagebox.showerror("Font Error", "Arial font not found. Ensure 'Arial.ttf' is in the directory.")
         return
 
     # Loop through the list of serial numbers and place each label on the PDF
     for index, serial in enumerate(serial_numbers):
+        if not serial:
+            continue  # Skip empty serial numbers
+
         row = index // labels_per_row  # Determine the row position
         col = index % labels_per_row   # Determine the column position
         x = margin + col * (label_width + x_spacing)
@@ -77,19 +80,17 @@ def generate_and_display_pdf():
             try:
                 serial_start = int(serial_start_entry.get().strip())
                 serial_numbers = [str(serial_start + i) for i in range(num_labels)]
+                # Fill with empty strings if fewer than num_labels
+                serial_numbers += [''] * (num_labels - len(serial_numbers))
             except ValueError:
                 raise ValueError("Starting Serial Number must be a valid integer.")
         else:
             serial_numbers = [entry.get().strip() for entry in manual_entries]
-            if any(not sn for sn in serial_numbers):
-                raise ValueError("Please provide all serial numbers.")
-
-        # Check if the number of serial numbers matches the number of labels
-        if len(serial_numbers) != num_labels:
-            raise ValueError(f"Number of serial numbers does not match the number of labels ({num_labels}).")
+            # Create a list of empty strings with the number of labels
+            serial_numbers = (serial_numbers + [''] * num_labels)[:num_labels]
 
         # Provide feedback during PDF creation
-        messagebox.showinfo("Generating PDF", "PDF has been! Press OK to continue.")
+        messagebox.showinfo("Generating PDF", "PDF has been created! Press OK to continue.")
         
         # Create PDF labels
         create_labels(serial_numbers, date, product_type)
@@ -206,7 +207,7 @@ try:
     )
     logo_img_tk = ImageTk.PhotoImage(logo_img)
     logo_label = tk.Label(logo_frame, image=logo_img_tk, bg="#feffff")
-    logo_label.image = logo_img_tk
+    logo_label.image = logo_img_tk  # Keep a reference to avoid garbage collection
     logo_label.pack(fill="x")
 except Exception as e:
     print(f"Failed to load or resize large logo image: {e}")
